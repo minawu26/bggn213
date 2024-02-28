@@ -1,0 +1,161 @@
+---
+title: "class10"
+author: "Mina Wu( PID: A59013200)"
+format: pdf
+date: 09-February-2024
+
+---
+
+# What is in the PDB? 
+
+Download a CSV file with current composiiton data from: https://www.rcsb.org/stats/summary
+
+```{r}
+pdbstats <- read.csv("Data Export Summary.csv", row.names=1)
+pdbstats
+```
+
+
+
+```{r}
+
+#x<- "2,2222"
+
+#sub <- as.numeric(gsub(",", "", x))
+#sub
+
+```
+
+Create a function to remove commas. 
+```{r}
+commasum<- function (x){
+  #Remove comma, convert to numeric and sum
+ sum(as.numeric(gsub(",", "", x)))
+}
+```
+
+```{r}
+commasum(pdbstats$X.ray)
+```
+
+
+
+I can now 'apply()` this function to my wee table to get all the numbers I need. 
+
+```{r}
+round(apply(pdbstats,2, commasum)/commasum(pdbstats$Total)*100,2)
+```
+> Q1: What percentage of structures in the PDB are solved by X-Ray and Electron Microscopy.
+
+84.54% for xray and 8.72% for EM. 
+
+
+```{r}
+commasum(pdbstats$Total[1])/commasum(pdbstats$Total)
+```
+
+> Q2: What proportion of structures in the PDB are protein?
+
+0.8665362
+
+
+ > Q3 class: How does the total number of protein structures in the PDB relate to the total number of protein sequences in Uniprot? 
+
+(186898/250,322,721)*100 = 0.074%
+
+
+
+> Q3: Type HIV in the PDB website search box on the home page and determine how many HIV-1 protease structures are in the current PDB?
+
+There ar 4,410 structures. 
+
+# Visualizing the HIV-1 potease struture 
+
+We will use the Mol* (mol-star) homepage at: https://molstar.org/viewer/
+
+Looking at 1HSG 
+
+![Figure 1HSG](1HSG.png)
+
+Looking at the aspartic acid at position 25 for both the A and B chain. It's represented as space-fill. 
+
+![Figure 1HSG](1HSG 2.png)
+
+## Working with structures in R 
+
+We will use the bio3d package for structrual bioinformatics 
+
+```{r}
+library(bio3d)
+
+hiv<- read.pdb("1hsg")
+
+hiv
+```
+
+```{r}
+head (hiv$atom)
+```
+```{r}
+pdbseq(hiv)
+
+```
+```{r}
+aa123(pdbseq(hiv)[25])
+```
+
+```{r}
+adk <- read.pdb("6s36")
+adk
+```
+
+NOrmal mode analysis (NMA) a bioinformatics method to predict fucntional motions and large-scale structure changes. 
+```{r}
+m <- nma(adk)
+plot(m)
+```
+
+Make a wee move (a.k.a "trajectory") of this predicted motions
+```{r}
+mktrj(m, file="adk_movie.pdb")
+```
+
+## Quick comparactive Structure analysis of Adenylate kinase
+
+Extract sequence and run a BLAST search
+```{r}
+s<- pdbseq(adk)
+blast<- blast.pdb(s)
+hits<- plot(blast)
+```
+
+
+Get the results from BLAST and download all the top hits. 
+
+```{r}
+
+hits$pdb.id
+```
+
+
+```{r}
+# Download releated PDB files
+files <- get.pdb(hits$pdb.id, path="pdbs", split=TRUE, gzip=TRUE)
+```
+
+```{r}
+# Align releated PDBs
+pdbs <- pdbaln(files, fit = TRUE, exefile="msa")
+```
+
+# PCA of all these ADK structures
+
+```{r}
+pc.xray <- pca(pdbs)
+plot(pc.xray)
+```
+```{r}
+ mktrj(pc.xray, file="pco_movie.pdb")
+
+```
+
